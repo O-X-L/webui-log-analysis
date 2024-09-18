@@ -1,0 +1,90 @@
+---
+
+geoip:
+  ipinfo_asn: '/etc/geoip/country_asn.mmdb'
+  ipinfo_country: '/etc/geoip/country_asn.mmdb'
+  # ipinfo_location:
+  # maxmind_asn:
+  # maxmind_country:
+  # maxmind_city:
+
+files:
+  - path: 'prod.log'
+    prefix: 'waf_prod_'
+    extract:
+      - name: time
+        regex: '(\d*:\d*(AM|PM))'
+        type: 'time'
+        time_format: '3:04PM'
+
+      - name: 'client'
+        search: '[client "<THIS>"]'
+        clean:
+          remove: '::ffff:'
+
+      - name: 'hostname'
+        search: '[hostname "<THIS>"]'
+        clean:
+          remove: '::ffff:'
+
+      - name: 'score'
+        regex: '.*\(Total Score: (\d*)\).*'
+        type: 'int'
+        fallback: '0'
+
+      - name: 'file'
+        search: '[file "<THIS>"]'
+        clean:
+          remove: '/etc/coraza-spoa/'
+
+      - name: 'rule_line'
+        search: '[line "<THIS>"]'
+        type: 'int'
+
+      - name: 'rule_id'
+        search: '[id "<THIS>"]'
+        type: 'int'
+
+      - name: 'msg'
+        search: '[msg "<THIS>"]'
+
+      - name: 'data'
+        search: '[data "<THIS>"]'
+
+      - name: 'severity'
+        search: '[severity "<THIS>"]'
+
+      - name: 'tags'
+        multiple: true
+        search: '[tag "<THIS>"]'
+
+      - name: 'uri'
+        search: '[uri "<THIS>"]'
+
+      - name: 'uid'
+        search: '[unique_id "<THIS>"]'
+
+    process:
+      - name: category
+        from: 'file'
+        regex: '\d-(.*?).conf'
+        clean:
+          remove: 'APPLICATION-ATTACK-'
+
+      - name: geoip_asn
+        geoip:
+          db: 'ipinfo_asn'
+        from: 'client'
+        clean:
+          remove: 'AS'
+
+      - name: geoip_as_name
+        geoip:
+          db: 'ipinfo_asn'
+          attribute: 'as_name'
+        from: 'client'
+
+      - name: geoip_country
+        geoip:
+          db: 'ipinfo_country'
+        from: 'client'
