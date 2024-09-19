@@ -1,3 +1,4 @@
 web/static/dist/*.js
 web/static/dist/*.css
 main
+*.log
